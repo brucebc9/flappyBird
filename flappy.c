@@ -58,8 +58,10 @@ word player_score;
 #define PLAYROWS 27
 #define CHAR(x) ((x))
 #define COLOR_SCORE 1
-
+#define PLAYER_MAX_VELOCITY -10 // Max speed of the player; we won't let you go past this.
+#define PLAYER_VELOCITY_ACCEL 2 // How quickly do we get up to max velocity? 
 // buffers that hold vertical slices of nametable data
+
 char ntbuf1[PLAYROWS];	// left side
 char ntbuf2[PLAYROWS];	// right side
 
@@ -87,13 +89,13 @@ sbyte actor_dy[NUM_ACTORS];
 const char PALETTE[32] = { 
   0x13,			// background color
 
-  0x20,0x2D,0x1A,0x00,	// ladders and pickups
+  0x20,0x2D,0x1A,0x00,	// 
   0x0D,0x20,0x1A,0x00,	// floor blocks
   0x00,0x10,0x20,0x00,
   0x06,0x20,0x1A,0x00,
 
-  0x0A,0x35,0x24,0x00,	// enemy sprites
-  0x00,0x37,0x25,0x00,	// rescue person
+  0x0A,0x35,0x24,0x00,	// 
+  0x00,0x37,0x25,0x00,	//
   0x0D,0x2D,0x1A,0x00,
   0x0D,0x27,0x2A	// player sprites
 };
@@ -153,7 +155,7 @@ word nt2attraddr(word a) {
 
 // generate new random segment
 void new_segment() {
-  seg_height = (rand8() & 4)+1;
+  seg_height = (rand8() & 5)+1;
   //seg_height =5;
   seg_height2=(6-seg_height)+1;
   seg_width=8;
@@ -273,8 +275,9 @@ if(seg_width>=7)
 void update()
 {
 
-      low=200-(seg_height*16);
-      high=low-63;
+   low=200-(seg_height*16);
+   high=low-63;
+  
    if(x_scroll>160)
     {
      if ((x_pos>3&&x_pos<10) && (actor_y[0]<high || actor_y[0]>low+4))
@@ -295,6 +298,7 @@ void update()
 
 void loser_screen()
 {
+  /*
   if (actor_y[0]<198){
   actor_dy[0]=2;
   }
@@ -302,12 +306,11 @@ void loser_screen()
   actor_dy[0]=0;
   }
   actor_y[0] += actor_dy[0];
-  
+  */
   
      while(1)
   {
    
-
     ppu_wait_frame();
     if(pad_trigger(0)&PAD_START) break;
 
@@ -337,18 +340,15 @@ void scroll_demo() {
   // infinite loop
   while (1) {
         oam_id = 4;
-/*
-if (actor_dy[0]==-6){
-  actor_dy[0]=0;
-    actor_y[0] += actor_dy[0];}*/
     
     // set player 0/1 velocity based on controller
-    for (i=0; i<2; i++) {
+    for (i=0; i<1; i++) {
       // poll controller i (0-1)
       pad = pad_poll(0);
       // move actor[i] up/down
       if (pad&PAD_UP && actor_y[i]>8) {
         actor_dy[i]=-7;
+        //sfx_play(3,0);
         }
       else if (pad&PAD_DOWN && actor_y[i]<212) actor_dy[i]=1;
       else if (actor_y[i]>199){
@@ -368,36 +368,32 @@ if (actor_dy[0]==-6){
       actor_y[i] += actor_dy[i];      
 	
       x_pos = ((x_scroll+3)/8 + 32) & 15;
-      x_exact_pos = ((x_scroll+3)/8 + 32) & 127;
+      x_exact_pos = ((x_scroll+3)/8 + 32) & 255;
 
-     // sfx_play(3,1);}
     
     //updates score and collisions every 2 pixels
     //if ((x_scroll & 7) == 0)
       update();
       
-      if ((x_scroll & 7) == 0){
-           if(x_scroll>160)
-           {     
-     if (x_pos==10)
-     add_score(1);
-    } 
-    }
-       
+      if(gameover==1)
+        break;
       
+      if ((x_scroll & 7) == 0)
+      {
+        if(x_scroll>160)
+         {     
+         if (x_pos==10)
+         add_score(1);
+         } 
+      }
+       
     // ensure VRAM buffer is cleared
     ppu_wait_nmi();
-      
-    //if (actor_dy[i]<0)
-    //actor_dy[i]=0;
     vrambuf_clear();
-
-
-      
+ 
     // split at sprite zero and set X scroll
     split(x_scroll, 0);
-           
-       
+               
     // scroll to the left
     scroll_left();
 
