@@ -169,8 +169,8 @@ word nt2attraddr(word a) {
 
 // generate new random segment
 void new_segment() {
-  seg_height = (rand8() & 5)+1;
-  //seg_height =5;
+  //seg_height = (rand8() & 5)+1;
+  seg_height =5;
   seg_height2=(6-seg_height)+1;
   seg_width=8;
   seg_palette = 0;
@@ -514,6 +514,7 @@ void title_screen(void)
   vrambuf_flush();
   set_vram_update(updbuf);
 }
+
 // main function, run after console reset
 void main(void) {
 
@@ -554,6 +555,7 @@ while(1){
   //main portion of the game
    scroll_demo();
   ppu_off();
+
 }
     
 }
