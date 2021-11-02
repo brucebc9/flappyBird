@@ -20,6 +20,8 @@ using 2x2 blocks of tiles ("metatiles").
 // 0 = horizontal mirroring
 // 1 = vertical mirroring
 #define NES_MIRRORING 1
+#define MAX_SPEED 8
+#define y_acceleration 2
 
 // VRAM update buffer
 #include "vrambuf.h"
@@ -47,10 +49,10 @@ extern char demo_sounds[];
 word x_scroll;		// X scroll amount in pixels
 byte seg_height;	// segment height in metatiles
 byte seg_height2;	// inverse segment height
-byte seg_width;		// segment width in metatiles
+byte seg_width;		// segment width in metatiles of pipes
 byte seg_char;		// character to draw
 byte seg_palette;	// attribute table value
-byte high;
+byte high;		//
 byte low;
 byte x_pos;
 byte x_exact_pos;
@@ -70,8 +72,8 @@ static int iy,dy;
 #define PLAYROWS 27
 #define CHAR(x) ((x+64))
 #define COLOR_SCORE 1
-#define PLAYER_MAX_VELOCITY -10 // Max speed of the player; we won't let you go past this.
-#define PLAYER_VELOCITY_ACCEL 2 // How quickly do we get up to max velocity? 
+//#define PLAYER_MAX_VELOCITY -10 // Max speed of the player; we won't let you go past this.
+//#define PLAYER_VELOCITY_ACCEL 2 // How quickly do we get up to max velocity? 
 // buffers that hold vertical slices of nametable data
 #define FP_BITS 4
 #define bird_color 0
@@ -320,6 +322,18 @@ void update()
   
 }
 
+void draw_sprite(){
+  // draw and move all actors
+      for (i=0; i<NUM_ACTORS; i++) {
+      byte runseq = actor_x[i] & 7;
+      if (actor_dx[i] >= 0)
+        runseq += 8;
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, bird);
+      actor_x[i] += actor_dx[i];
+      actor_y[i] += actor_dy[i]; 
+      }
+}
+
 void loser_screen()
 {
   /*
@@ -331,15 +345,31 @@ void loser_screen()
   }
   actor_y[0] += actor_dy[0];
   */
-  
-     while(1)
+  while (1)
   {
-   
-    ppu_wait_frame();
-    if(pad_trigger(0)&PAD_START) break;
+    oam_id=4;
+      if (actor_y[0]<211)
+      {
+      actor_dy[0]=2;
+      actor_y[0] += actor_dy[0];
+      draw_sprite();
+      ppu_wait_nmi();
+      vrambuf_clear();
+      // split at sprite zero and set X scroll
+      split(x_scroll, 0);
+      }
 
+    {
+
+      ppu_wait_frame();
+      if(pad_trigger(0)&PAD_START) break;
+
+    }
   }
 }
+
+
+
 
 void read_controller()
 {
@@ -363,6 +393,24 @@ void read_controller()
     	}
 
 }
+
+void check_score(){
+        if ((x_scroll & 7) == 0)
+      {
+        if(x_scroll>160)
+         {     
+          
+         if (x_pos==8)
+         {
+         sfx_play(0,0);
+         add_score(1);
+         }
+         
+         } 
+      }
+}
+  
+
 // scrolls the screen left one pixel
 void scroll_left() {
   // update nametable every 16 pixels
@@ -380,22 +428,16 @@ void scroll_demo() {
   // get data for initial segment
   new_segment();
   //x_scroll = 0;
-  gameover= 0;
+  //gameover= 0;
   
   // infinite loop
-  while (1) {
+  while (1) 
+  {
         oam_id = 4;
+    	read_controller();
     
-	read_controller();
     
-    // draw and move all actors
-    for (i=0; i<NUM_ACTORS; i++) {
-      byte runseq = actor_x[i] & 7;
-      if (actor_dx[i] >= 0)
-        runseq += 8;
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, bird);
-      actor_x[i] += actor_dx[i];
-      actor_y[i] += actor_dy[i];      
+      draw_sprite();
 	
       x_pos = ((x_scroll+3)/8 + 32) & 15;
       x_exact_pos = ((x_scroll+3)/8 + 32) & 255;
@@ -407,16 +449,10 @@ void scroll_demo() {
       
       if(gameover==1)
         break;
+    
+    check_score();
       
-      if ((x_scroll & 7) == 0)
-      {
-        if(x_scroll>160)
-         {     
-         if (x_pos==9)
-         add_score(1);
-          //sfx_play(0,0);
-         } 
-      }
+
        
     // ensure VRAM buffer is cleared
     ppu_wait_nmi();
@@ -428,11 +464,12 @@ void scroll_demo() {
     // scroll to the left
     scroll_left();
 
-  }
+  
     if(gameover==1)
       break;
   }
  loser_screen();
+
 }
 
 void pal_fade_to(unsigned to)
