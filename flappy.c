@@ -19,7 +19,7 @@ using 2x2 blocks of tiles ("metatiles").
 
 // 0 = horizontal mirroring
 // 1 = vertical mirroring
-#define NES_MIRRORING 1
+#define NES_MIRRORING 0
 #define MAX_SPEED 8
 #define y_acceleration 2
 
@@ -336,15 +336,7 @@ void draw_sprite(){
 
 void loser_screen()
 {
-  /*
-  if (actor_y[0]<198){
-  actor_dy[0]=2;
-  }
-  else{
-  actor_dy[0]=0;
-  }
-  actor_y[0] += actor_dy[0];
-  */
+
   while (1)
   {
     oam_id=4;
@@ -373,10 +365,10 @@ void loser_screen()
 
 void read_controller()
 {
-
-    
+   
     // set player 0/1 velocity based on controller
-    for (i=0; i<1; i++) {
+    for (i=0; i<1; i++) 
+    {
       // poll controller i (0-1)
       pad = pad_poll(0);
       // move actor[i] up/down
@@ -390,7 +382,7 @@ void read_controller()
       }
       else{
         actor_dy[0]=2;}
-    	}
+    }
 
 }
 
@@ -423,36 +415,27 @@ void scroll_left() {
 
 // main loop, scrolls left continuously
 void scroll_demo() {
-
-
   // get data for initial segment
   new_segment();
-  //x_scroll = 0;
-  //gameover= 0;
   
   // infinite loop
   while (1) 
   {
-        oam_id = 4;
-    	read_controller();
-    
-    
-      draw_sprite();
-	
-      x_pos = ((x_scroll+3)/8 + 32) & 15;
-      x_exact_pos = ((x_scroll+3)/8 + 32) & 255;
+    oam_id = 4;
+    read_controller(); 
+    draw_sprite();
 
+    x_pos = ((x_scroll+3)/8 + 32) & 15;
+    x_exact_pos = ((x_scroll+3)/8 + 32) & 255;
     
     //updates score and collisions every 2 pixels
     //if ((x_scroll & 7) == 0)
-      update();
-      
-      if(gameover==1)
-        break;
+    update();
     
-    check_score();
-      
+    if(gameover==1)
+      break;
 
+    check_score();
        
     // ensure VRAM buffer is cleared
     ppu_wait_nmi();
@@ -463,11 +446,10 @@ void scroll_demo() {
                
     // scroll to the left
     scroll_left();
-
-  
     if(gameover==1)
       break;
   }
+  
  loser_screen();
 
 }
@@ -498,6 +480,7 @@ void title_screen(void)
 
   vram_adr(NTADR_A(0,0));
   vram_unrle(flappyBird_titlescreen);
+
  
  //vram_adr(NAMETABLE_C);//clear second nametable, as it is visible in the jumping effect
   //vram_fill(40,1024);
@@ -547,7 +530,7 @@ void title_screen(void)
   vrambuf_clear();
   ppu_off();
   vram_adr(NTADR_A(0,0));
-  vram_fill(40, 1024);
+  vram_fill(40, 32*28);
   vrambuf_flush();
   set_vram_update(updbuf);
 }
@@ -562,14 +545,11 @@ void main(void) {
   // set music callback function for NMI
   nmi_set_callback(famitone_update);
   // play music
- music_play(3);
+ music_play(0);
  title_screen();
 
 while(1){
   clrscr();
-    //music_play(3);
- //vram_adr(0x23c0);
-  //vram_fill(40, 1024);
 
   player_score = 0;
   gameover=0;
@@ -578,11 +558,11 @@ while(1){
   oam_clear();
   reset_players();
   //sets sprite 0 to declare split line
-  oam_spr(1, 22, 0xa0, 0x20, 0); 
+  oam_spr(0, 22, 0xa0, 0x20, 0); 
   
-    // set attributes
-    // clear vram buffer
-  vrambuf_clear();
+  // set attributes
+  // clear vram buffer
+  //vrambuf_clear();
   set_vram_update(updbuf);
   add_score(0);
   // enable PPU rendering (turn on screen)
@@ -590,7 +570,7 @@ while(1){
       
   // scroll window back and forth
   //main portion of the game
-   scroll_demo();
+  scroll_demo();
   ppu_off();
 
 }
