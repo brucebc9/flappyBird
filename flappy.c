@@ -88,11 +88,12 @@ char attrbuf[PLAYROWS/4];
 const unsigned char name[]={\
         0,      0,      (code),   bird_color, \
         8,      0,      (code)+1,   bird_color, \
-        0,      8,      (code)+18,   bird_color, \
-        8,      8,      (code)+19,   bird_color, \
+        0,      8,      (code)+16,   bird_color, \
+        8,      8,      (code)+17,   bird_color, \
         128};
 
-DEF_METASPRITE_2x2(bird, 0x2, 0);
+DEF_METASPRITE_2x2(bird, 0x02, 0);
+DEF_METASPRITE_2x2(bird_up, 0x16, 0);
 // sprite x/y positions
 #define NUM_ACTORS 1
 byte actor_x[NUM_ACTORS];
@@ -161,6 +162,25 @@ void clrscr() {
   vram_fill(0, 32*28);
   vram_adr(0x24c0);
   ppu_on_bg();
+}
+
+void pal_fade_to(unsigned to)
+{
+ if(!to) music_stop();
+
+  while(bright!=to)
+  {
+    delay(4);
+    if(bright<to) ++bright; else --bright;
+    pal_bright(bright);
+  }
+
+  if(!bright)
+  {
+    ppu_off();
+    set_vram_update(NULL);
+    scroll(0,0);
+  }
 }
 
 // convert from nametable address to attribute table address
@@ -310,15 +330,18 @@ void update()
       {
        //reset_players();
        sfx_play(1,0);
+       pal_fade_to(8);
        gameover=1;
       }
     } 
    if (actor_y[0]>210)
    {
      sfx_play(1,0);
+     pal_fade_to(8);
   //reset_players();
      gameover=1;
    }
+  pal_fade_to(4);
   
 }
 
@@ -336,7 +359,6 @@ void draw_sprite(){
 
 void loser_screen()
 {
-
   while (1)
   {
     oam_id=4;
@@ -348,7 +370,7 @@ void loser_screen()
       ppu_wait_nmi();
       vrambuf_clear();
       // split at sprite zero and set X scroll
-      split(x_scroll, 0);
+     // split(x_scroll, 0);
       }
 
     {
@@ -454,24 +476,7 @@ void scroll_demo() {
 
 }
 
-void pal_fade_to(unsigned to)
-{
- if(!to) music_stop();
 
-  while(bright!=to)
-  {
-    delay(4);
-    if(bright<to) ++bright; else --bright;
-    pal_bright(bright);
-  }
-
-  if(!bright)
-  {
-    ppu_off();
-    set_vram_update(NULL);
-    scroll(0,0);
-  }
-}
 
 void title_screen(void)
 {
