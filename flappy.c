@@ -500,7 +500,7 @@ void title_screen(void)
   }
 
   scroll(1,0);//if start is pressed, show the title at whole
-  sfx_play(3,0);//titlescreen sound effect
+  sfx_play(0,0);//titlescreen sound effect
   for(i=0;i<16;++i)//and blink the text faster
   {
     pal_col(2,i&1?0x1a:0x39);
