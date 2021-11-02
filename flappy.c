@@ -155,9 +155,9 @@ void reset_players() {
 void clrscr() {
   vrambuf_clear();
   ppu_off();
-  vram_adr(0x2400);
+  vram_adr(0x2000);
   vram_fill(0, 32*28);
-  vram_adr(0x2400);
+  vram_adr(0x24c0);
   ppu_on_bg();
 }
 
