@@ -49,18 +49,22 @@ extern char demo_sounds[];
 word x_scroll;		// X scroll amount in pixels
 byte seg_height;	// segment height in metatiles
 byte seg_height2;	// inverse segment height
+byte last_seg_height;	// remembers previous segment height;
 byte seg_width;		// segment width in metatiles of pipes
 byte seg_char;		// character to draw
 byte seg_palette;	// attribute table value
-byte high;		//
-byte low;
-byte x_pos;
-byte x_exact_pos;
-byte gameover;
-word player_score;
-char oam_id;
-char pad;
-char i;
+byte high;		// high position of pipe opening
+byte low;		// low position of pipe opening
+byte x_pos;		// defines position by 8*8 tile
+byte x_exact_pos;	// defines positoin by exact pixel position
+byte gameover;		// stores state of game, gameover is 1
+word player_score;	// stores the player's score
+char oam_id;		// ID of sprite
+char pad;		// needed to read controller input
+char last_controller_state; //keeps track of the previous controller input
+char i;			// multi-use variable useful for loops
+byte direction;
+
 
 static unsigned char bright;
 static unsigned char frame_cnt;
@@ -93,7 +97,12 @@ const unsigned char name[]={\
         128};
 
 DEF_METASPRITE_2x2(bird, 0x02, 0);
-DEF_METASPRITE_2x2(bird_up, 0x16, 0);
+DEF_METASPRITE_2x2(bird_up, 0x20, 0);
+
+const unsigned char* const birdSeq[2] = {
+bird, bird_up
+};
+
 // sprite x/y positions
 #define NUM_ACTORS 1
 byte actor_x[NUM_ACTORS];
@@ -107,7 +116,7 @@ const char PALETTE[32] = {
   0x22,			// background color
 
   0x2A,0x38,0x0D,0x00,	// 
-  0x0D,0x1A,0x00,0x00,	// floor blocks
+  0x0D,0x1A,0x00,0x00,	// pipes & tiles
   0x0D,0x1A,0x39,0x00,
   0x10,0x00,0x30,0x00,
 
@@ -116,7 +125,19 @@ const char PALETTE[32] = {
   0x0D,0x12,0x30,0x00,
   0x0D,0x28,0x30	// player sprites
 };
+
 /// FUNCTIONS
+
+// generate new random segment
+void new_segment() {
+  last_seg_height=seg_height;
+  seg_height = (rand8() & 5)+1;
+  //seg_height =5;
+  seg_height2=(6-seg_height)+1;
+  seg_width=8;
+  seg_palette = 0;
+  seg_char = 0xDF;
+}
 
 // function to write a string into the name table
 //   adr = start address in name table
@@ -187,16 +208,6 @@ void pal_fade_to(unsigned to)
 word nt2attraddr(word a) {
   return (a & 0x2c00) | 0x3c0 |
     ((a >> 4) & 0x38) | ((a >> 2) & 0x07);
-}
-
-// generate new random segment
-void new_segment() {
-  //seg_height = (rand8() & 5)+1;
-  seg_height =5;
-  seg_height2=(6-seg_height)+1;
-  seg_width=8;
-  seg_palette = 0;
-  seg_char = 0xDF;
 }
 
 // draw metatile into nametable buffers
@@ -321,8 +332,8 @@ if(seg_width>=7)
 void update()
 {
 
-   low=200-(seg_height*16);
-   high=low-63;
+   low=209-(last_seg_height*16);
+   high=low-74;
   
    if(x_scroll>160)
     {
@@ -347,11 +358,21 @@ void update()
 
 void draw_sprite(){
   // draw and move all actors
+  //if (actor_dy[0]>0){
+   // direction=1;
+//  }
+  //else if (actor_dy[0]>0){
+    //direction=1;
+//  }
+ // else if (actor_dy[0]<0){
+  //  direction=0;
+ // }
+          
       for (i=0; i<NUM_ACTORS; i++) {
       byte runseq = actor_x[i] & 7;
       if (actor_dx[i] >= 0)
         runseq += 8;
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, bird);
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, birdSeq[direction]);
       actor_x[i] += actor_dx[i];
       actor_y[i] += actor_dy[i]; 
       }
@@ -359,6 +380,7 @@ void draw_sprite(){
 
 void loser_screen()
 {
+  direction=1;
   while (1)
   {
     oam_id=4;
@@ -387,7 +409,7 @@ void loser_screen()
 
 void read_controller()
 {
-   
+   last_controller_state=pad;
     // set player 0/1 velocity based on controller
     for (i=0; i<1; i++) 
     {
@@ -439,8 +461,8 @@ void scroll_left() {
 void scroll_demo() {
   // get data for initial segment
   new_segment();
-  
-  // infinite loop
+  last_seg_height=seg_height;
+  //infinite loop
   while (1) 
   {
     oam_id = 4;
@@ -559,6 +581,7 @@ while(1){
   player_score = 0;
   gameover=0;
   x_scroll=0;
+  direction=0;
   // set sprite 0
   oam_clear();
   reset_players();
