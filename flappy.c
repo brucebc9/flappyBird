@@ -7,7 +7,7 @@
 
 // 0 = horizontal mirroring
 // 1 = vertical mirroring
-#define NES_MIRRORING 0
+#define NES_MIRRORING 1
 #define MAX_SPEED 8
 #define y_acceleration 2
 
