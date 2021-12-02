@@ -1,16 +1,4 @@
 
-/*
-We demonstrate horizontal scrolling of two nametables.
-Vertical mirroring is set, so nametables A and B are
-to the left and right of each other.
-
-New playfield data is randomly generated and updated
-offscreen using the vrambuf module.
-We update the nametable in 16-pixel-wide vertical strips,
-using 2x2 blocks of tiles ("metatiles").
-
-*/
-
 #include "neslib.h"
 #include <stdlib.h>
 #include <string.h>
