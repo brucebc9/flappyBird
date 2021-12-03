@@ -64,6 +64,7 @@ static int iy,dy;
 #define PLAYROWS 27
 #define CHAR(x) ((x+64))
 #define COLOR_SCORE 1
+
 //#define PLAYER_MAX_VELOCITY -10 // Max speed of the player; we won't let you go past this.
 //#define PLAYER_VELOCITY_ACCEL 2 // How quickly do we get up to max velocity? 
 // buffers that hold vertical slices of nametable data
@@ -84,11 +85,30 @@ const unsigned char name[]={\
         8,      8,      (code)+17,   bird_color, \
         128};
 
-DEF_METASPRITE_2x2(bird, 0x02, 0);
-DEF_METASPRITE_2x2(bird_up, 0x20, 0);
+DEF_METASPRITE_2x2(bird, 0x06, 0);
+DEF_METASPRITE_2x2(birdFly, 0x02, 0);
+DEF_METASPRITE_2x2(birdFly2, 0x04, 0);
+DEF_METASPRITE_2x2(bird_down, 0x20, 0);
+DEF_METASPRITE_2x2(enemyCloud, 0x5C, 0);
+DEF_METASPRITE_2x2(bulletBill, 0x5E, 0);
 
-const unsigned char* const birdSeq[2] = {
-bird, bird_up
+const unsigned char* const birdSeq[16] = {
+  bird, birdFly, birdFly2, 
+  bird, birdFly, birdFly2, 
+  bird, birdFly,
+  bird, birdFly, birdFly2, 
+  bird, birdFly, birdFly2, 
+  bird, birdFly,
+};
+
+const unsigned char CoinsSpr[]={
+  0,  0,0x7b,3,
+  8,  0,0x82,3,
+  16,  0,0x8B,3,
+  24,  0,0x7D,3,
+  32,  0,0x82,3,
+  40,  0,0x7E,3,
+  128
 };
 
 // sprite x/y positions
@@ -103,15 +123,15 @@ sbyte actor_dy[NUM_ACTORS];
 const char PALETTE[32] = { 
   0x22,			// background color
 
-  0x2A,0x38,0x0D,0x00,	// 
-  0x0D,0x1A,0x00,0x00,	// pipes & tiles
+  0x29,0x38,0x0D,0x00,	// 
+  0x0D,0x20,0x00,0x00,	// pipes & tiles
   0x0D,0x1A,0x39,0x00,
   0x10,0x00,0x30,0x00,
 
   0x0D,0x16,0x30,0x00,	// 
   0x0D,0x15,0x30,0x00,	//
   0x0D,0x12,0x30,0x00,
-  0x0D,0x28,0x30	// player sprites
+  0x29,0x00,0x0D	// player sprites
 };
 
 /// FUNCTIONS
@@ -148,7 +168,7 @@ void draw_bcd_word(byte col, byte row, word bcd) {
 
 void add_score(word bcd) {
   player_score = bcd_add(player_score, bcd);
-  draw_bcd_word(14, 2, player_score);
+  draw_bcd_word(3, 3, player_score);
 }
 
 // returns absolute value of x
@@ -168,7 +188,7 @@ void clrscr() {
   vrambuf_clear();
   ppu_off();
   vram_adr(0x2000);
-  vram_fill(0, 32*28);
+  vram_fill(8, 32*28);
   vram_adr(0x24c0);
   ppu_on_bg();
 }
@@ -330,7 +350,8 @@ void update()
        //reset_players();
        sfx_play(1,0);
        pal_fade_to(8);
-       gameover=1;
+        gameover=1;
+       //sfx_play(3,0);
       }
     } 
    if (actor_y[0]>210)
@@ -339,6 +360,7 @@ void update()
      pal_fade_to(8);
   //reset_players();
      gameover=1;
+     //sfx_play(32,0);
    }
   pal_fade_to(4);
   
@@ -357,13 +379,21 @@ void draw_sprite(){
  // }
           
       for (i=0; i<NUM_ACTORS; i++) {
-      byte runseq = actor_x[i] & 7;
-      if (actor_dx[i] >= 0)
+      byte runseq = actor_y[i] & 7;
+      if (actor_dy[i] >= 0)
         runseq += 8;
-      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, birdSeq[direction]);
+      if (direction==1)
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, bird_down);
+      oam_id = oam_meta_spr(actor_x[i], actor_y[i], oam_id, birdSeq[runseq]);
       actor_x[i] += actor_dx[i];
       actor_y[i] += actor_dy[i]; 
       }
+  
+  
+  	// draw "coins" at the top in sprites
+	oam_id = oam_meta_spr(24,8,oam_id, CoinsSpr);
+	//temp1 = coins + 0xf0;
+	//oam_id = oam_spr(64,16,temp1,3,oam_id);
 }
 
 void loser_screen()
@@ -450,6 +480,7 @@ void scroll_demo() {
   // get data for initial segment
   new_segment();
   last_seg_height=seg_height;
+ // draw_bcd_word(4,2,CHAR("Hello"));
   //infinite loop
   while (1) 
   {
@@ -462,7 +493,7 @@ void scroll_demo() {
     
     //updates score and collisions every 2 pixels
     //if ((x_scroll & 7) == 0)
-    update();
+    //update();
     
     if(gameover==1)
       break;
@@ -494,6 +525,7 @@ void title_screen(void)
   scroll(0,240);//title is aligned to the color attributes, so shift it a bit to the right
 
   vram_adr(NTADR_A(0,0));
+  
   vram_unrle(flappyBird_titlescreen);
 
  
@@ -545,7 +577,7 @@ void title_screen(void)
   vrambuf_clear();
   ppu_off();
   vram_adr(NTADR_A(0,0));
-  vram_fill(40, 32*28);
+  vram_fill(0, 32*32);
   vrambuf_flush();
   set_vram_update(updbuf);
 }
@@ -561,9 +593,10 @@ void main(void) {
   nmi_set_callback(famitone_update);
   // play music
  music_play(0);
- title_screen();
+ //title_screen();
 
 while(1){
+  
   clrscr();
 
   player_score = 0;
@@ -573,8 +606,10 @@ while(1){
   // set sprite 0
   oam_clear();
   reset_players();
+  
   //sets sprite 0 to declare split line
-  oam_spr(0, 22, 0xa0, 0x20, 0); 
+  oam_spr(0, 29, 0xa0, 0x20, 0); 
+  //put_str(NTADR_A(2,2), "Birdie");
   
   // set attributes
   // clear vram buffer
@@ -583,6 +618,7 @@ while(1){
   add_score(0);
   // enable PPU rendering (turn on screen)
   ppu_on_all();
+  
       
   // scroll window back and forth
   //main portion of the game
