@@ -493,7 +493,7 @@ void scroll_demo() {
     
     //updates score and collisions every 2 pixels
     //if ((x_scroll & 7) == 0)
-    //update();
+    update();
     
     if(gameover==1)
       break;
@@ -593,7 +593,7 @@ void main(void) {
   nmi_set_callback(famitone_update);
   // play music
  music_play(0);
- //title_screen();
+ title_screen();
 
 while(1){
   
